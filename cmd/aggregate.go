@@ -51,7 +51,7 @@ func prependPrefix(obj any, prefix string, vhost bool) any {
 		return obj
 	}
 
-    endp := path.Join("/", prefix, suffix)
+	endp := path.Join("/", prefix, suffix)
 
 	if vhost {
 		endp = path.Join("__virtual", endp)

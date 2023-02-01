@@ -15,6 +15,6 @@ func TestHappyPath(t *testing.T) {
 	endpointsDir := "scenarios/happy-path"
 	cfg := "scenarios/happy-path/krakend.tmpl"
 	outf := filepath.Join(t.TempDir(), "krakend.tmpl")
-	err := cmd.Generate(endpointsDir, cfg, outf, "$ENDPOINTS$")
+	err := cmd.Generate(endpointsDir, cfg, outf, "$ENDPOINTS$", false)
 	assert.NoError(t, err, "should not fail")
 }
