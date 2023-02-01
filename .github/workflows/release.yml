@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v**
+
+jobs:
+  auto-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
+
+  # we'll start signing images once this moves to infratographer
+  container-main:
+    name: build-image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout 
+        uses: actions/checkout@v3
+      
+      - name: docker-metadata
+        id: docker-metadata
+        uses: docker/metadata-action@v3
+        with:
+          images: ghcr.io/${{ github.repository }}/krakend-endpoints-tool
+          tags: |
+            type=semver,pattern={{version}}
+
+      - name: Build
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.docker-metadata.outputs.tags }}
