@@ -33,6 +33,7 @@ func init() {
 	generateCmd.Flags().StringP("config", "c", "", "krakend configuration template")
 	generateCmd.Flags().StringP("output", "o", "-", "output file. defaults to stdout")
 	generateCmd.Flags().StringP("identifier", "i", "$ENDPOINTS$", "identifier for the endpoints in the template")
+	generateCmd.Flags().BoolP("vhost", "v", false, "prepend the vhost to the endpoint")
 }
 
 func generateMain(cmd *cobra.Command, args []string) error {
@@ -40,11 +41,12 @@ func generateMain(cmd *cobra.Command, args []string) error {
 	cfg := cmd.Flag("config").Value.String()
 	outf := cmd.Flag("output").Value.String()
 	id := cmd.Flag("identifier").Value.String()
+	vhost := cmd.Flag("vhost").Value.String() == "true"
 
-	return Generate(endpoints, cfg, outf, id)
+	return Generate(endpoints, cfg, outf, id, vhost)
 }
 
-func Generate(endpoints, cfg, outf, id string) error {
+func Generate(endpoints, cfg, outf, id string, vhost bool) error {
 	if endpoints == "" {
 		return fmt.Errorf("endpoints directory is required")
 	}
@@ -65,7 +67,7 @@ func Generate(endpoints, cfg, outf, id string) error {
 
 	defer outfile.Close()
 
-	endpts, err := parseEndpoints(endpoints, exceptions)
+	endpts, err := parseEndpoints(endpoints, exceptions, vhost)
 	if err != nil {
 		return err
 	}

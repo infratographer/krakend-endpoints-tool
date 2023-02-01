@@ -30,14 +30,10 @@ func init() {
 	rootCmd.AddCommand(aggregateCmd)
 
 	aggregateCmd.Flags().StringP("output", "o", "-", "output file. defaults to stdout")
+	aggregateCmd.Flags().BoolP("vhost", "v", false, "prepend the vhost to the endpoint")
 }
 
-func prependPrefix(obj any, prefix string) any {
-	if prefix == "" {
-		debug("no prefix to prepend")
-		return obj
-	}
-
+func prependPrefix(obj any, prefix string, vhost bool) any {
 	objMap, ok := obj.(map[string]any)
 	if !ok {
 		debug("not a map, skipping: %T", obj)
@@ -55,12 +51,18 @@ func prependPrefix(obj any, prefix string) any {
 		return obj
 	}
 
-	objMap["endpoint"] = path.Join(prefix, suffix)
+    endp := path.Join("/", prefix, suffix)
+
+	if vhost {
+		endp = path.Join("__virtual", endp)
+	}
+
+	objMap["endpoint"] = "/" + endp
 
 	return objMap
 }
 
-func parseEndpoints(endpoints string, exceptions []string) ([]any, error) {
+func parseEndpoints(endpoints string, exceptions []string, vhost bool) ([]any, error) {
 	endpts := []any{}
 	err := WalkEndpoints(endpoints, exceptions, func(path string, typ endpointType, obj any, prefix string) error {
 		switch typ {
@@ -71,12 +73,12 @@ func parseEndpoints(endpoints string, exceptions []string) ([]any, error) {
 			}
 
 			for i, endpt := range endptArr {
-				endptArr[i] = prependPrefix(endpt, prefix)
+				endptArr[i] = prependPrefix(endpt, prefix, vhost)
 			}
 
 			endpts = append(endpts, endptArr...)
 		case objectEndpoint:
-			obj := prependPrefix(obj, prefix)
+			obj := prependPrefix(obj, prefix, vhost)
 			endpts = append(endpts, obj)
 		default:
 			return fmt.Errorf("unknown endpoint type: %s", path)
@@ -94,10 +96,11 @@ func parseEndpoints(endpoints string, exceptions []string) ([]any, error) {
 func aggregateMain(cmd *cobra.Command, args []string) error {
 	endpoints := cmd.Flag("endpoints").Value.String()
 	outf := cmd.Flag("output").Value.String()
-	return aggregate(endpoints, outf)
+	vhost := cmd.Flag("vhost").Value.String() == "true"
+	return aggregate(endpoints, outf, vhost)
 }
 
-func aggregate(endpoints, outf string) error {
+func aggregate(endpoints, outf string, vhost bool) error {
 	if endpoints == "" {
 		return fmt.Errorf("endpoints directory is required")
 	}
@@ -111,7 +114,7 @@ func aggregate(endpoints, outf string) error {
 
 	fmt.Println("# Aggregating endpoints in", green(endpoints))
 
-	endpts, err := parseEndpoints(endpoints, exceptions)
+	endpts, err := parseEndpoints(endpoints, exceptions, vhost)
 	if err != nil {
 		return err
 	}
