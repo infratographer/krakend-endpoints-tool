@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 Equinix Metal
+Copyright © 2023 Infratographer Authors
 */
 package main
 
