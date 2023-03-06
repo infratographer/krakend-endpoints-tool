@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -65,10 +67,18 @@ func getEndpointAndType(path string) (endpointType, any, error) {
 	return unknownEndpoint, nil, nil
 }
 
-func castEndpointTypeArray(r io.Reader) (ok bool, endpointArray any) {
+func castEndpointTypeArray(f *os.File) (ok bool, endpointArray any) {
+	var decoder interface{ Decode(any) error }
+
+	if strings.HasSuffix(f.Name(), ".yaml") {
+		decoder = yaml.NewDecoder(f)
+	} else {
+		decoder = json.NewDecoder(f)
+	}
+
 	arrayProbe := []any{}
 
-	err := json.NewDecoder(r).Decode(&arrayProbe)
+	err := decoder.Decode(&arrayProbe)
 	if err != nil {
 		return false, nil
 	}
@@ -76,10 +86,18 @@ func castEndpointTypeArray(r io.Reader) (ok bool, endpointArray any) {
 	return true, arrayProbe
 }
 
-func castEndpointTypeObject(r io.Reader) (ok bool, endpointObj any) {
+func castEndpointTypeObject(f *os.File) (ok bool, endpointObj any) {
+	var decoder interface{ Decode(any) error }
+
+	if strings.HasSuffix(f.Name(), ".yaml") {
+		decoder = yaml.NewDecoder(f)
+	} else {
+		decoder = json.NewDecoder(f)
+	}
+
 	objProbe := map[string]any{}
 
-	err := json.NewDecoder(r).Decode(&objProbe)
+	err := decoder.Decode(&objProbe)
 	if err != nil {
 		return false, nil
 	}
@@ -100,7 +118,7 @@ func shouldBeSkipped(path string, d fs.DirEntry, exceptions []string) bool {
 		return true
 	}
 
-	if !strings.HasSuffix(d.Name(), ".json") {
+	if !strings.HasSuffix(d.Name(), ".json") && !strings.HasSuffix(d.Name(), ".yaml") {
 		return true
 	}
 
